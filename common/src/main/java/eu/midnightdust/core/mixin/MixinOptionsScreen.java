@@ -37,7 +37,7 @@ public abstract class MixinOptionsScreen extends Screen {
         }
     }
 
-    @Inject(at = @At("TAIL"), method = "initTabNavigation")
+    @Inject(at = @At("TAIL"), method = "refreshWidgetPositions")
     public void midnightlib$onResize(CallbackInfo ci) {
         if (shouldShowButton()) this.midnightlib$setButtonPos();
     }
