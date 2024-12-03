@@ -247,9 +247,9 @@ public abstract class MidnightConfig {
             if (prevTab != null && prevTab != tabManager.getCurrentTab()) {
                 prevTab = tabManager.getCurrentTab();
                 this.list.clear(); fillList();
-                list.setScrollAmount(0);
+                list.setScrollY(0);
             }
-            scrollProgress = list.getScrollAmount();
+            scrollProgress = list.getScrollY();
             for (EntryInfo info : entries) try {info.field.set(null, info.value);} catch (IllegalAccessException ignored) {}
             updateButtons();
         }
@@ -391,7 +391,7 @@ public abstract class MidnightConfig {
                         }
                         this.list.addButton(widgets, name, info);
                     } else this.list.addButton(List.of(), name, info);
-                } list.setScrollAmount(scrollProgress);
+                } list.setScrollY(scrollProgress);
                 updateButtons();
             }
         }
