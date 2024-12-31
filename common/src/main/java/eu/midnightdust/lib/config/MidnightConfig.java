@@ -555,7 +555,17 @@ public abstract class MidnightConfig {
     }
 
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Client {}
+
+    /**
+     * Hides the entry on singleplayer/client-side.
+     * Accessible through{@code /midnightconfig MOD_ID ENTRY} and through directly editing the config file.
+     */
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Server {}
+
+    /**
+     * Hides the entry entirely.
+     * Accessible only through directly editing the config file.
+     */
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Hidden {}
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Comment {
         boolean centered() default false;
