@@ -489,7 +489,7 @@ public abstract class MidnightConfig {
                         context.drawOrderedTooltip(textRenderer, tooltipLines, mouseX, mouseY);
 
                     // testing purposes
-                    // else context.drawTooltip(textRenderer, Text.of(String.format("%s, %s", mouseX, mouseY)), mouseX, mouseY);
+                    /* else context.drawTooltip(textRenderer, Text.of(String.format("%s, %s", mouseX, mouseY)), mouseX, mouseY); */
                 }
 
         }
