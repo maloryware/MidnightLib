@@ -33,6 +33,12 @@ import static net.minecraft.client.MinecraftClient.IS_SYSTEM_MAC;
  *  Based on <a href="https://github.com/Minenash/TinyConfig">...</a>
  *  Credits to Minenash */
 
+// hi mots!
+    // TODO:
+    //  define identifier for fetching the title tooltip text from lang
+    //  fetch title tooltip from entry info?
+    //  refactor at will :p
+
 @SuppressWarnings("unchecked")
 public abstract class MidnightConfig {
     private static final Pattern INTEGER_ONLY = Pattern.compile("(-?[0-9]*)");
@@ -79,6 +85,7 @@ public abstract class MidnightConfig {
             .registerTypeAdapter(Identifier.class, new Identifier.Serializer())
             .setPrettyPrinting().create();
 
+    @SuppressWarnings("unused") // shhhhhh...
     public static @Nullable Object getDefaultValue(String modid, String entry) {
         for (EntryInfo e : entries) {
             if (modid.equals(e.modid) && entry.equals(e.field.getName())) return e.defaultValue;
@@ -107,6 +114,7 @@ public abstract class MidnightConfig {
             } catch (IllegalAccessException ignored) {}
         }
     }
+    @SuppressWarnings("ConstantValue") //pertains to requiredModLoaded
     @Environment(EnvType.CLIENT)
     private static void initClient(String modid, Field field, EntryInfo info) {
         info.dataType = getUnderlyingType(field);
@@ -118,6 +126,7 @@ public abstract class MidnightConfig {
 
         if (e != null) {
             if (!e.requiredMod().isEmpty()) requiredModLoaded = PlatformFunctions.isModLoaded(e.requiredMod());
+
             if (!requiredModLoaded) return;
             if (!e.name().isEmpty()) info.name = Text.translatable(e.name());
             if (info.dataType == int.class) textField(info, Integer::parseInt, INTEGER_ONLY, (int) e.min(), (int) e.max(), true);
@@ -155,6 +164,7 @@ public abstract class MidnightConfig {
     }
 
     // TODO: Maybe move this into the screen class itself to free up some RAM?
+
     private static void textField(EntryInfo info, Function<String,Number> f, Pattern pattern, double min, double max, boolean cast) {
         boolean isNumber = pattern != null;
         info.function = (BiFunction<TextFieldWidget, ButtonWidget, Predicate<String>>) (t, b) -> s -> {
@@ -412,7 +422,7 @@ public abstract class MidnightConfig {
     @Environment(EnvType.CLIENT)
     public static class MidnightConfigListWidget extends ElementListWidget<ButtonEntry> {
         public boolean renderHeaderSeparator = true;
-        public MidnightConfigListWidget(MinecraftClient client, int width, int height, int y, int itemHeight) { super(client, width, height, y, itemHeight); }
+        public  MidnightConfigListWidget(MinecraftClient client, int width, int height, int y, int itemHeight) { super(client, width, height, y, itemHeight); }
         @Override public int getScrollbarX() { return this.width -7; }
 
         @Override
@@ -432,18 +442,56 @@ public abstract class MidnightConfig {
         public final List<ClickableWidget> buttons;
         public final EntryInfo info;
         public boolean centered = false;
+        public final Text tooltipText;
+        public final TextWidget entryText;
+        public MultilineTextWidget title;
+        private final List<OrderedText> tooltipLines;
 
         public ButtonEntry(List<ClickableWidget> buttons, Text text, EntryInfo info) {
             this.buttons = buttons; this.text = text; this.info = info;
+            this.entryText = text != null ? new TextWidget(text, textRenderer) : null;
             if (info != null) this.centered = info.centered;
+
+            this.tooltipText = Text.of("A very neat, original, thought out, yet badly worded tooltip, leading to uncomfortably long text.");
+            this.tooltipLines = textRenderer.wrapLines(tooltipText, MinecraftClient.getInstance().getWindow().getScaledWidth() / 2);
+
+            // moved text declaration to constructor
+            if (text != null && (!text.getString().contains("spacer") || !buttons.isEmpty())) {
+                //int wrappedY = y;
+                title = new MultilineTextWidget(
+                        (centered) // x
+                                ? (MinecraftClient.getInstance().getWindow().getScaledWidth() / 2 - (textRenderer.getWidth(text) / 2))
+                                : 12,
+                        0, // will be set on render
+                        Text.of(text),
+                        textRenderer
+                );
+
+                title.setTooltip(Tooltip.of(Text.of("Test!")));
+                title.setMaxWidth(buttons.size() > 1
+                        ? buttons.get(1).getX() - 24
+                        : MinecraftClient.getInstance().getWindow().getScaledWidth() - 24);
+            }
         }
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            buttons.forEach(b -> { b.setY(y); b.render(context, mouseX, mouseY, tickDelta); });
-            if (text != null && (!text.getString().contains("spacer") || !buttons.isEmpty())) { int wrappedY = y;
-                for (Iterator<OrderedText> textIterator = textRenderer.wrapLines(text, (buttons.size() > 1 ? buttons.get(1).getX()-24 : MinecraftClient.getInstance().getWindow().getScaledWidth() - 24)).iterator(); textIterator.hasNext(); wrappedY += 9) {
-                    context.drawTextWithShadow(textRenderer, textIterator.next(), (centered) ? (MinecraftClient.getInstance().getWindow().getScaledWidth() / 2 - (textRenderer.getWidth(text) / 2)) : 12, wrappedY + 5, 0xFFFFFF);
+            buttons.forEach(b -> { b.setY(y); b.render(context, mouseX, mouseY, tickDelta);});
+
+                if(title != null) {
+
+                    title.setY(y + 9);
+
+                    title.render(context, mouseX, mouseY, tickDelta);
+
+
+                    // isHovered and isMouseOver didn't work! sad!
+                    if(mouseX >= title.getX() && mouseX < title.getWidth() + title.getX()
+                    && mouseY >= title.getY() && mouseY < title.getHeight() + title.getY())
+                        context.drawOrderedTooltip(textRenderer, tooltipLines, mouseX, mouseY);
+
+                    // testing purposes
+                    // else context.drawTooltip(textRenderer, Text.of(String.format("%s, %s", mouseX, mouseY)), mouseX, mouseY);
                 }
-            }
+
         }
         public List<? extends Element> children() {return Lists.newArrayList(buttons);}
         public List<? extends Selectable> selectableChildren() {return Lists.newArrayList(buttons);}
