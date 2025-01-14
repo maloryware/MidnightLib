@@ -3,6 +3,7 @@
   "modid.midnightconfig.text1":"I am a comment *u*",
   "modid.midnightconfig.text2":"I am a centered comment (╯°□°）╯︵ ┻━┻",
   "modid.midnightconfig.name":"I am a string!",
+  "modid.midnightconfig.name.label.tooltip":"I am a label tooltip \nWohoo!",
   "modid.midnightconfig.name.tooltip":"I am a tooltip uwu \nI am a new line",
   "modid.midnightconfig.fabric":"I am an int",
   "modid.midnightconfig.world":"I am a double",

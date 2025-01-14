@@ -13,7 +13,7 @@ import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenTexts;
-import net.minecraft.text.OrderedText; import net.minecraft.text.Style; import net.minecraft.text.Text;
+import net.minecraft.text.Style; import net.minecraft.text.Text;
 import net.minecraft.util.Formatting; import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,6 +79,7 @@ public abstract class MidnightConfig {
             .registerTypeAdapter(Identifier.class, new Identifier.Serializer())
             .setPrettyPrinting().create();
 
+    @SuppressWarnings("unused") // Utility for mod authors
     public static @Nullable Object getDefaultValue(String modid, String entry) {
         for (EntryInfo e : entries) {
             if (modid.equals(e.modid) && entry.equals(e.field.getName())) return e.defaultValue;
@@ -107,6 +108,7 @@ public abstract class MidnightConfig {
             } catch (IllegalAccessException ignored) {}
         }
     }
+    @SuppressWarnings("ConstantValue") //pertains to requiredModLoaded
     @Environment(EnvType.CLIENT)
     private static void initClient(String modid, Field field, EntryInfo info) {
         info.dataType = getUnderlyingType(field);
@@ -118,6 +120,7 @@ public abstract class MidnightConfig {
 
         if (e != null) {
             if (!e.requiredMod().isEmpty()) requiredModLoaded = PlatformFunctions.isModLoaded(e.requiredMod());
+
             if (!requiredModLoaded) return;
             if (!e.name().isEmpty()) info.name = Text.translatable(e.name());
             if (info.dataType == int.class) textField(info, Integer::parseInt, INTEGER_ONLY, (int) e.min(), (int) e.max(), true);
@@ -149,12 +152,13 @@ public abstract class MidnightConfig {
             } catch (NoSuchFieldException | IllegalAccessException ignored) { return listType; }
         } else return field.getType();
     }
-    public static Tooltip getTooltip(EntryInfo info) {
-        String key = info.modid + ".midnightconfig."+info.field.getName()+".tooltip";
-        return Tooltip.of(info.error != null ? info.error : I18n.hasTranslation(key) ? Text.translatable(key) : Text.empty());
+    public static Tooltip getTooltip(EntryInfo info, boolean isButton) {
+        String key = info.modid + ".midnightconfig."+info.field.getName()+(!isButton ? ".label" : "" )+".tooltip";
+        return Tooltip.of(isButton && info.error != null ? info.error : I18n.hasTranslation(key) ? Text.translatable(key) : Text.empty());
     }
 
     // TODO: Maybe move this into the screen class itself to free up some RAM?
+
     private static void textField(EntryInfo info, Function<String,Number> f, Pattern pattern, double min, double max, boolean cast) {
         boolean isNumber = pattern != null;
         info.function = (BiFunction<TextFieldWidget, ButtonWidget, Predicate<String>>) (t, b) -> s -> {
@@ -168,7 +172,7 @@ public abstract class MidnightConfig {
                 info.error = inLimits? null : Text.literal(value.doubleValue() < min ?
                         "§cMinimum " + (isNumber? "value" : "length") + (cast? " is " + (int)min : " is " + min) :
                         "§cMaximum " + (isNumber? "value" : "length") + (cast? " is " + (int)max : " is " + max)).formatted(Formatting.RED);
-                t.setTooltip(getTooltip(info));
+                t.setTooltip(getTooltip(info, true));
             }
 
             info.tempValue = s;
@@ -258,7 +262,7 @@ public abstract class MidnightConfig {
                 for (ButtonEntry entry : this.list.children()) {
                     if (entry.buttons != null && entry.buttons.size() > 1) {
                         if (entry.buttons.get(0) instanceof ClickableWidget widget)
-                            if (widget.isFocused() || widget.isHovered()) widget.setTooltip(getTooltip(entry.info));
+                            if (widget.isFocused() || widget.isHovered()) widget.setTooltip(getTooltip(entry.info, true));
                         if (entry.buttons.get(1) instanceof ButtonWidget button)
                             button.active = !Objects.equals(entry.info.value.toString(), entry.info.defaultValue.toString());
         }}}}
@@ -323,7 +327,7 @@ public abstract class MidnightConfig {
                             var values = (Map.Entry<ButtonWidget.PressAction, Function<Object, Text>>) info.function;
                             if (info.dataType.isEnum())
                                 values.setValue(value -> Text.translatable(translationPrefix + "enum." + info.field.getType().getSimpleName() + "." + info.value.toString()));
-                            widget = ButtonWidget.builder(values.getValue().apply(info.value), values.getKey()).dimensions(width - 185, 0, 150, 20).tooltip(getTooltip(info)).build();
+                            widget = ButtonWidget.builder(values.getValue().apply(info.value), values.getKey()).dimensions(width - 185, 0, 150, 20).tooltip(getTooltip(info, true)).build();
                         }
                         else if (e.isSlider())
                             widget = new MidnightSliderWidget(width - 185, 0, 150, 20, Text.of(info.tempValue), (Double.parseDouble(info.tempValue) - e.min()) / (e.max() - e.min()), info);
@@ -334,7 +338,7 @@ public abstract class MidnightConfig {
                             Predicate<String> processor = ((BiFunction<TextFieldWidget, ButtonWidget, Predicate<String>>) info.function).apply(textField, done);
                             textField.setTextPredicate(processor);
                         }
-                        widget.setTooltip(getTooltip(info));
+                        widget.setTooltip(getTooltip(info, true));
 
                         ButtonWidget cycleButton = null;
                         if (info.field.getType() == List.class) {
@@ -412,7 +416,7 @@ public abstract class MidnightConfig {
     @Environment(EnvType.CLIENT)
     public static class MidnightConfigListWidget extends ElementListWidget<ButtonEntry> {
         public boolean renderHeaderSeparator = true;
-        public MidnightConfigListWidget(MinecraftClient client, int width, int height, int y, int itemHeight) { super(client, width, height, y, itemHeight); }
+        public  MidnightConfigListWidget(MinecraftClient client, int width, int height, int y, int itemHeight) { super(client, width, height, y, itemHeight); }
         @Override public int getScrollbarX() { return this.width -7; }
 
         @Override
@@ -432,17 +436,27 @@ public abstract class MidnightConfig {
         public final List<ClickableWidget> buttons;
         public final EntryInfo info;
         public boolean centered = false;
+        public MultilineTextWidget title;
 
         public ButtonEntry(List<ClickableWidget> buttons, Text text, EntryInfo info) {
             this.buttons = buttons; this.text = text; this.info = info;
             if (info != null) this.centered = info.centered;
+            int scaledWidth = MinecraftClient.getInstance().getWindow().getScaledWidth();
+
+            if (text != null && (!text.getString().contains("spacer") || !buttons.isEmpty())) {
+                title = new MultilineTextWidget((centered) ? (scaledWidth / 2 - (textRenderer.getWidth(text) / 2)) : 12, 0, Text.of(text), textRenderer);
+                if (info != null) title.setTooltip(getTooltip(info, false));
+                title.setMaxWidth(buttons.size() > 1 ? buttons.get(1).getX() - 24 : scaledWidth - 24);
+            }
         }
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
-            buttons.forEach(b -> { b.setY(y); b.render(context, mouseX, mouseY, tickDelta); });
-            if (text != null && (!text.getString().contains("spacer") || !buttons.isEmpty())) { int wrappedY = y;
-                for (Iterator<OrderedText> textIterator = textRenderer.wrapLines(text, (buttons.size() > 1 ? buttons.get(1).getX()-24 : MinecraftClient.getInstance().getWindow().getScaledWidth() - 24)).iterator(); textIterator.hasNext(); wrappedY += 9) {
-                    context.drawTextWithShadow(textRenderer, textIterator.next(), (centered) ? (MinecraftClient.getInstance().getWindow().getScaledWidth() / 2 - (textRenderer.getWidth(text) / 2)) : 12, wrappedY + 5, 0xFFFFFF);
-                }
+            buttons.forEach(b -> { b.setY(y); b.render(context, mouseX, mouseY, tickDelta);});
+            if (title != null) {
+                title.setY(y + 9);
+                title.renderWidget(context, mouseX, mouseY, tickDelta);
+
+                boolean tooltipVisible = mouseX >= title.getX() && mouseX < title.getWidth() + title.getX() && mouseY >= title.getY() && mouseY < title.getHeight() + title.getY();
+                if (tooltipVisible && title.getTooltip() != null) context.drawOrderedTooltip(textRenderer, title.getTooltip().getLines(MinecraftClient.getInstance()), mouseX, mouseY);
             }
         }
         public List<? extends Element> children() {return Lists.newArrayList(buttons);}
@@ -469,7 +483,7 @@ public abstract class MidnightConfig {
 
     /**
      * Entry Annotation<br>
-     * - <b>width</b>: The maximum character length of the {@link String}, {@link Identifier} or String/Identifier {@link List<String>} field<br>
+     * - <b>width</b>: The maximum character length of the {@link String}, {@link Identifier} or String/Identifier {@link List<>} field<br>
      * - <b>min</b>: The minimum value of the <code>int</code>, <code>float</code> or <code>double</code> field<br>
      * - <b>max</b>: The maximum value of the <code>int</code>, <code>float</code> or <code>double</code> field<br>
      * - <b>name</b>: The name of the field in the config screen<br>
@@ -507,8 +521,20 @@ public abstract class MidnightConfig {
     }
 
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Client {}
+
+    /**
+     * Hides the entry in config screens, but still makes it
+     * accessible through the command {@code /midnightconfig MOD_ID ENTRY} and directly editing the config file.
+     */
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Server {}
+
+    /**
+     * Hides the entry entirely.
+     * Accessible only through directly editing the config file.
+     * Perfect for saving persistent internal data.
+     */
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Hidden {}
+
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Comment {
         boolean centered() default false;
         String category() default "default";
