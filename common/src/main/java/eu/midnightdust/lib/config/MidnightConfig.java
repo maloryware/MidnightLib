@@ -496,7 +496,7 @@ public abstract class MidnightConfig {
 
     /**
      * Entry Annotation<br>
-     * - <b>width</b>: The maximum character length of the {@link String}, {@link Identifier} or String/Identifier {@link List<String>} field<br>
+     * - <b>width</b>: The maximum character length of the {@link String}, {@link Identifier} or String/Identifier {@link List<>} field<br>
      * - <b>min</b>: The minimum value of the <code>int</code>, <code>float</code> or <code>double</code> field<br>
      * - <b>max</b>: The maximum value of the <code>int</code>, <code>float</code> or <code>double</code> field<br>
      * - <b>name</b>: The name of the field in the config screen<br>
@@ -536,16 +536,18 @@ public abstract class MidnightConfig {
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Client {}
 
     /**
-     * Hides the entry on singleplayer/client-side.
-     * Accessible through{@code /midnightconfig MOD_ID ENTRY} and through directly editing the config file.
+     * Hides the entry in config screens, but still makes it
+     * accessible through the command {@code /midnightconfig MOD_ID ENTRY} and directly editing the config file.
      */
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Server {}
 
     /**
      * Hides the entry entirely.
      * Accessible only through directly editing the config file.
+     * Perfect for saving persistent internal data.
      */
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Hidden {}
+
     @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.FIELD) public @interface Comment {
         boolean centered() default false;
         String category() default "default";
