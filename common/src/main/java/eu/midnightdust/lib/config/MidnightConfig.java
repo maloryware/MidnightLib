@@ -79,7 +79,7 @@ public abstract class MidnightConfig {
             .registerTypeAdapter(Identifier.class, new Identifier.Serializer())
             .setPrettyPrinting().create();
 
-    @SuppressWarnings("unused") // shhhhhh...
+    @SuppressWarnings("unused") // Utility for mod authors
     public static @Nullable Object getDefaultValue(String modid, String entry) {
         for (EntryInfo e : entries) {
             if (modid.equals(e.modid) && entry.equals(e.field.getName())) return e.defaultValue;
@@ -443,34 +443,21 @@ public abstract class MidnightConfig {
             if (info != null) this.centered = info.centered;
             int scaledWidth = MinecraftClient.getInstance().getWindow().getScaledWidth();
 
-            // moved text declaration to constructor
             if (text != null && (!text.getString().contains("spacer") || !buttons.isEmpty())) {
-                title = new MultilineTextWidget(
-                        (centered) // x
-                                ? (scaledWidth / 2 - (textRenderer.getWidth(text) / 2))
-                                : 12,
-                        0, // will be set on render
-                        Text.of(text), textRenderer
-                );
-
+                title = new MultilineTextWidget((centered) ? (scaledWidth / 2 - (textRenderer.getWidth(text) / 2)) : 12, 0, Text.of(text), textRenderer);
                 if (info != null) title.setTooltip(getTooltip(info, false));
-                title.setMaxWidth(buttons.size() > 1
-                        ? buttons.get(1).getX() - 24
-                        : scaledWidth - 24);
+                title.setMaxWidth(buttons.size() > 1 ? buttons.get(1).getX() - 24 : scaledWidth - 24);
             }
         }
         public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             buttons.forEach(b -> { b.setY(y); b.render(context, mouseX, mouseY, tickDelta);});
-                if (title != null) {
-                    title.setY(y + 9);
-                    title.renderWidget(context, mouseX, mouseY, tickDelta);
+            if (title != null) {
+                title.setY(y + 9);
+                title.renderWidget(context, mouseX, mouseY, tickDelta);
 
-                    boolean tooltipVisible = mouseX >= title.getX() && mouseX < title.getWidth() + title.getX() && mouseY >= title.getY() && mouseY < title.getHeight() + title.getY();
-                    if (tooltipVisible && title.getTooltip() != null) {
-                        context.drawOrderedTooltip(textRenderer, title.getTooltip().getLines(MinecraftClient.getInstance()), mouseX, mouseY);
-                    }
-                }
-
+                boolean tooltipVisible = mouseX >= title.getX() && mouseX < title.getWidth() + title.getX() && mouseY >= title.getY() && mouseY < title.getHeight() + title.getY();
+                if (tooltipVisible && title.getTooltip() != null) context.drawOrderedTooltip(textRenderer, title.getTooltip().getLines(MinecraftClient.getInstance()), mouseX, mouseY);
+            }
         }
         public List<? extends Element> children() {return Lists.newArrayList(buttons);}
         public List<? extends Selectable> selectableChildren() {return Lists.newArrayList(buttons);}
