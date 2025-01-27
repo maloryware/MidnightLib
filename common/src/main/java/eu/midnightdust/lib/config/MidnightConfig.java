@@ -9,7 +9,6 @@ import net.minecraft.client.MinecraftClient; import net.minecraft.client.font.Te
 import net.minecraft.client.gui.Element; import net.minecraft.client.gui.Selectable; import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tab.GridScreenTab; import net.minecraft.client.gui.tab.Tab; import net.minecraft.client.gui.tab.TabManager;
 import net.minecraft.client.gui.tooltip.Tooltip; import net.minecraft.client.gui.widget.*;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.registry.Registries;
 import net.minecraft.screen.ScreenTexts;
